@@ -1,0 +1,20 @@
+{
+    "dev": {
+      "app_function": "wsgi.app",
+      "aws_region": "ap-northeast-2",
+      "profile_name": "default",
+      "project_name": "jujeob-tts",
+      "runtime": "python3.10",
+      "s3_bucket": "jujeob-tts-zappa-v1",
+      "cors": true,
+      "log_level": "WARN",
+      "extra_permissions": [
+        {
+          "Effect": "Allow",
+          "Action": ["ssm:GetParameter"],
+          "Resource": "*"
+        }
+      ],
+      "num_retained_versions": 1
+    }
+  }
