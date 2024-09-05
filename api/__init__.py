@@ -1,7 +1,7 @@
 import os
 import json
 
-from flask import Flask, Blueprint
+from flask import Flask
 from flask_cors import CORS
 from flask_restx import Api
 from werkzeug.utils import import_string
@@ -9,6 +9,7 @@ from werkzeug.utils import import_string
 from api.common import jwt
 from api.server_status import server_status_api
 from api.stock import stock_api
+from api.quant import quant_api
 from config import config_by_name
 from util.logging_util import logger
 
@@ -65,9 +66,11 @@ def create_app():
     # register namespace
     api.add_namespace(server_status_api)
     api.add_namespace(stock_api)
+    api.add_namespace(quant_api)
     # register controllers
     from api.server_status import controllers
     from api.stock import controllers
+    from api.quant import controllers
 
     # enable CORS for front-end app
     CORS(app)

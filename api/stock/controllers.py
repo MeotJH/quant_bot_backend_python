@@ -6,7 +6,7 @@ from flask_restx import Resource, fields
 from api import stock_api as api
 
 
-from api.stock.services import find_stocks, find_stock_by_id
+from api.stock.services import find_stocks
 
 
 stock_model = api.model('StockModel', {
@@ -39,9 +39,4 @@ class Stocks(Resource):
         stocks_dict_list = [asdict(stock) for stock in stocks]
         return {'stocks': stocks_dict_list}
 
-@api.route('/<string:stock_id>', strict_slashes=False)
-class Stocks(Resource):
 
-    def get(self, stock_id=None):
-        stock = find_stock_by_id(stock_id)
-        return stock
