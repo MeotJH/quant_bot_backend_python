@@ -10,7 +10,7 @@ def find_stock_by_id(item_id, period='1y', trend_follow_days=75):
     stock_data['Trend_Follow'] = stock_data['Close'].rolling(window=trend_follow_days).mean()
 
     stock_data = stock_data.sort_index(ascending=False)
-
+    stock_data = stock_data.dropna(subset=['Trend_Follow'])
     # 결과를 딕셔너리 형태로 변환하여 반환
     stocks_dict = stock_data.reset_index().to_dict(orient='records')
     for stock in stocks_dict:
