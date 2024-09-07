@@ -10,9 +10,12 @@ from api.common import jwt
 from api.server_status import server_status_api
 from api.stock import stock_api
 from api.quant import quant_api
+from api.user import user_api
 from config import config_by_name
 from util.logging_util import logger
 
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 authorizations = {
     "user_token": {
@@ -22,6 +25,8 @@ authorizations = {
         "description": "JWT for user",
     },
 }
+db = SQLAlchemy()
+migrate = Migrate()
 
 
 def create_app():
@@ -40,11 +45,12 @@ def create_app():
         description="Flask-Restx를 이용한 백엔드 API",
         prefix='/api/v1',
     )
-
+    
     config_name = os.getenv("TEMP_FLASK_ENV", "local")
     print(f"config_env:{config_name}")
     config_object = import_string(config_by_name[config_name])()
     app.config.from_object(config_object)
+
 
     # 참조하는 모든 라이브러리의 로그 레벨을 변경하고 싶을때 아래 코드를 주석 풀면 모든 라이브러리의 로그가 출력된다.
     # logger.set_level(None, app.config['LOG_LEVEL'])
@@ -59,20 +65,23 @@ def create_app():
 
     # jwt
     jwt.init_app(app)
-    # sqlalchemy
-    # db.init_app(app)
     # alembic
     #migrate.init_app(app, db)
     # register namespace
     api.add_namespace(server_status_api)
     api.add_namespace(stock_api)
     api.add_namespace(quant_api)
+    api.add_namespace(user_api)
     # register controllers
     from api.server_status import controllers
     from api.stock import controllers
     from api.quant import controllers
+    from api.user import controllers
 
     # enable CORS for front-end app
     CORS(app)
+    # sqlalchemy 및 데이터베이스 DDL 관리 lib 
+    db.init_app(app)
+    migrate.init_app(app, db)
 
     return app

@@ -1,5 +1,6 @@
 import logging
-
+import os
+from dotenv import load_dotenv
 from constants import SingletonInstance
 
 
@@ -11,6 +12,7 @@ class JWTConfig(SingletonInstance):
 
 # Flask Base Configuration
 class BaseConfig(object):
+    load_dotenv()
     # Flask
     ENV = "development"
     DEBUG = False
@@ -26,11 +28,13 @@ class BaseConfig(object):
     # SQLAlchemy
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
 
 
 # Flask Local Configuration
 class LocalConfig(BaseConfig):
     DEBUG = True
+
 
 
 # Flask Dev Configuration
