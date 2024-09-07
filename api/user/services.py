@@ -14,14 +14,11 @@ def save_user(user):
     return new_user.to_dict()
 
 def find_user(user):
-    try:
-        db_user = User.query.filter_by(email=user['email']).first()
-        if not check_password_hash(db_user.password, user['password']):
-            raise UnauthorizedException  # 비밀번호가 틀렸을 때 예외 발생
-    except UnauthorizedException:
-        raise UnauthorizedException('Invalid password', 'INVALID_PASSWORD')
+    db_user = User.query.filter_by(email=user['email']).first()
+    if not check_password_hash(db_user.password, user['password']):
+        raise UnauthorizedException('Invalid password', 'INVALID_PASSWORD')  # 비밀번호가 틀렸을 때 예외 발생
     response_user = db_user.to_dict()
     response_user['authorization'] = create_access_token(identity=db_user.email)
 
-    print(response_user)
+
     return response_user
