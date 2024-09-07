@@ -15,8 +15,26 @@ trend_follow_model = api.model('TrendFollowModel', {
     'Trend_Follow': fields.String(title='stock ipo_year'),
 })
 
+stock_info_model = api.model('StockInfoModel', {
+    'shortName': fields.String(title='stock name'),
+    'currentPrice': fields.String(title='Current Price'),
+    'previousClose': fields.String(title='Previous Close'),
+    'open': fields.String(title='Open'),
+    'volume': fields.String(title='Volume'),
+    'dayHigh': fields.String(title='stock High'),
+    'dayLow': fields.String(title='stock Low'),
+    'trailingPE': fields.String(title='per'),
+    'fiftyTwoWeekHigh': fields.String(title='52High'),
+    'fiftyTwoWeekLow': fields.String(title='52Low'),
+    'trailingEps': fields.String(title='trailingEps'),
+    'enterpriseValue': fields.String(title='Enterprise Value'),
+    'ebitda' : fields.String(title='EBITDA'),
+    'lastCrossTrendFollow': fields.String(title='Last Cross Trend Follow'),
+})
+
 trend_follows_model = api.model('TrendFollowsModel', {
-    'trend_follows': fields.List(fields.Nested(trend_follow_model), required=True, description='stock 목록'),
+    'stock_history': fields.List(fields.Nested(trend_follow_model), required=True, description='stock 목록'),
+    'stock_info': fields.Nested(stock_info_model),
 })
 
 
@@ -27,4 +45,5 @@ class Stocks(Resource):
     @api.marshal_with(trend_follows_model)
     def get(self, stock_id=None):
         stock = find_stock_by_id(stock_id)
-        return { 'trend_follows': stock }
+        print(stock['stock_info'])
+        return { 'stock_history': stock['stock_history'] , 'stock_info': stock['stock_info']}
