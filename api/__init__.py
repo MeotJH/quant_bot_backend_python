@@ -65,8 +65,6 @@ def create_app():
 
     # jwt
     jwt.init_app(app)
-    # alembic
-    #migrate.init_app(app, db)
     # register namespace
     api.add_namespace(server_status_api)
     api.add_namespace(stock_api)
@@ -82,9 +80,8 @@ def create_app():
     CORS(app)
     # sqlalchemy 및 데이터베이스 DDL 관리 lib 
     db.init_app(app)
-
     migrate.init_app(app, db)
 
-    from api.quant.models import Quant
-    from api.user.model import User
+    from api.quant.entityies import Quant
+    from api.user.entities import User
     return app

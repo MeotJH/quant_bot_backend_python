@@ -1,4 +1,4 @@
-from api.user.model import User
+from api.user.entities import User
 from api import db
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash

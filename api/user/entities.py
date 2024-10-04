@@ -1,4 +1,4 @@
-# myapp/models.py
+# myapp/entityies.py
 import uuid
 from api import db
 from sqlalchemy.dialects.postgresql import UUID
