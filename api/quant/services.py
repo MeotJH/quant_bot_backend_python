@@ -1,4 +1,10 @@
 import yfinance as yf
+from flask_jwt_extended import get_jwt_identity
+
+from api import db
+from api.quant.models import Quant
+from api.user.model import User
+
 
 def find_stock_by_id(item_id, period='1y', trend_follow_days=75):
 
@@ -36,3 +42,27 @@ def _find_last_cross_trend_follow(stock_data:dict):
         last_cross_trend_follow = None
     
     return last_cross_trend_follow
+
+def register_quant_by_stock(stock: str):
+    # 1. User를 UUID를 통해 찾기
+    jwt_user = get_jwt_identity()
+    user = User.query.filter_by(uuid=jwt_user).first()
+
+    if user is None:
+        return {"error": "User not found"}
+
+    # 2. Quant 객체 생성
+    new_quant = Quant(
+        stock=stock,
+        notification=False,
+        user_id=user.uuid  # user의 uuid를 외래키로 설정
+    )
+
+    # 3. 데이터베이스에 저장
+    try:
+        db.session.add(new_quant)
+        db.session.commit()
+        return {"success": "Quant saved successfully", "quant": new_quant.to_dict()}
+    except Exception as e:
+        db.session.rollback()
+        return {"error": f"Failed to save Quant: {str(e)}"}

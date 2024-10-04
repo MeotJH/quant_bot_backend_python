@@ -1,9 +1,4 @@
 import requests
-import yfinance as yf
-import pandas as pd
-
-import os
-import json
 
 
 from api.stock.models import Stock

@@ -19,6 +19,4 @@ def find_user(user):
         raise UnauthorizedException('Invalid password', 'INVALID_PASSWORD')  # 비밀번호가 틀렸을 때 예외 발생
     response_user = db_user.to_dict()
     response_user['authorization'] = create_access_token(identity=db_user.email)
-
-
     return response_user

@@ -82,6 +82,9 @@ def create_app():
     CORS(app)
     # sqlalchemy 및 데이터베이스 DDL 관리 lib 
     db.init_app(app)
+
     migrate.init_app(app, db)
 
+    from api.quant.models import Quant
+    from api.user.model import User
     return app

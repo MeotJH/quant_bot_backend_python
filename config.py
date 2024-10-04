@@ -28,6 +28,7 @@ class BaseConfig(object):
     # SQLAlchemy
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    print(f'os.getenv("SQLALCHEMY_DATABASE_URI"):{os.getenv("SQLALCHEMY_DATABASE_URI")}')
     SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
 
 
