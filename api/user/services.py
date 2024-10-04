@@ -1,4 +1,4 @@
-from api.user.model import User
+from api.user.entities import User
 from api import db
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,6 +19,4 @@ def find_user(user):
         raise UnauthorizedException('Invalid password', 'INVALID_PASSWORD')  # 비밀번호가 틀렸을 때 예외 발생
     response_user = db_user.to_dict()
     response_user['authorization'] = create_access_token(identity=db_user.email)
-
-
     return response_user

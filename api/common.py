@@ -1,24 +1,24 @@
 from contextlib import contextmanager
 
 from flask_jwt_extended import JWTManager
-#from flask_migrate import Migrate
-#from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 
 jwt = JWTManager()
 
-#db = SQLAlchemy()
+db = SQLAlchemy()
 
-#migrate = Migrate()
+migrate = Migrate()
 
 
 @contextmanager
 def transact():
     try:
         yield
-        #db.session.commit()
+        db.session.commit()
     except Exception:
-        #db.session.rollback()
+        db.session.rollback()
         raise
 
 
-#transactional = transact()
+transactional = transact()

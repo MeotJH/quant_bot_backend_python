@@ -65,8 +65,6 @@ def create_app():
 
     # jwt
     jwt.init_app(app)
-    # alembic
-    #migrate.init_app(app, db)
     # register namespace
     api.add_namespace(server_status_api)
     api.add_namespace(stock_api)
@@ -84,4 +82,6 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
+    from api.quant.entityies import Quant
+    from api.user.entities import User
     return app
