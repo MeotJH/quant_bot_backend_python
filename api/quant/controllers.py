@@ -2,7 +2,7 @@ from flask_jwt_extended import jwt_required
 from flask_restx import fields, Resource
 
 from api import quant_api as api
-from api.quant.services import find_stock_by_id, register_quant_by_stock
+from api.quant.services import find_stock_by_id, register_quant_by_stock, find_quants_by_user
 
 trend_follow_model = api.model('TrendFollowModel', {
     'Date': fields.String(title='stock ticker'),
@@ -48,9 +48,20 @@ trend_follows_register_response_model = api.model('TrendFollowsRegisterModel', {
     'notification': fields.Boolean(title='stock ticker'),
 })
 
+quant_by_user_model = api.model('QuantByUserModel', {
+    'stock': fields.String(title='stock'),
+    'quant_type': fields.String(title='stock quant_type'),
+    'notification': fields.Boolean(title='notification'),
+    'profit' : fields.String(title='profit'),
+    'profit_percent' : fields.String(title='profit_percent'),
+})
+
+quants_model = api.model('QuantsModel', {
+    'quants': fields.List(fields.Nested(quant_by_user_model), description='List of quants models')
+})
 
 @api.route('/trend_follow/<string:stock_id>', strict_slashes=False)
-class Quants(Resource):
+class Quant(Resource):
 
     @api.doc(params={'stock_id': 'AAPL'})
     @api.marshal_with(trend_follows_model)
@@ -66,3 +77,12 @@ class Quants(Resource):
         requests= api.payload
         stock = register_quant_by_stock(stock_id, requests['quant_type'])
         return stock
+
+@api.route('/trend_follow', strict_slashes=False)
+class Quants(Resource):
+
+    @jwt_required()
+    @api.marshal_with(quants_model)
+    def get(self):
+        quants = find_quants_by_user()
+        return {'quants': quants}
