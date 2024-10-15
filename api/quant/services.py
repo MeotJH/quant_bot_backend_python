@@ -1,5 +1,6 @@
 from numbers import Number
 
+from api.quant.model import QuantData
 import yfinance as yf
 from flask_jwt_extended import get_jwt_identity
 
@@ -47,31 +48,36 @@ def _find_last_cross_trend_follow(stock_data:dict):
     return last_cross_trend_follow
 
 
-def register_quant_by_stock(stock: str, quant_type: str):
-    # 1. User를 UUID를 통해 찾기
+def register_quant_by_stock(stock: str, quant_data: QuantData):
     jwt_user = get_jwt_identity()
     user = User.query.filter_by(email=jwt_user).first()
+
+    quant = Quant.query.filter_by(stock=stock, user_id=user.uuid, quant_type=quant_data.quant_type ).first()
+
+    if quant is not None:
+        raise BadRequestException('이미 존재하는 퀀트입니다.', 400)
 
     if user is None:
         return {"error": "User not found"}
 
-    # 2. Quant 객체 생성
     new_quant = Quant(
         stock=stock,
-        notification=False,
-        user_id=user.uuid,  # user의 uuid를 외래키로 설정
-        quant_type=quant_type
+        quant_type=quant_data.quant_type,
+        initial_price=quant_data.initial_price,
+        initial_trend_follow=quant_data.initial_trend_follow,
+        initial_status=quant_data.initial_status,
+        current_status=quant_data.initial_status,
+        notification=True,
+        user_id=user.uuid
     )
 
-    # 3. 데이터베이스에 저장
     try:
         db.session.add(new_quant)
         db.session.commit()
-        dict = new_quant.to_dict()
-        return dict
+        return new_quant.to_dict()
     except Exception as e:
         db.session.rollback()
-        raise BadRequestException(f'{e}', 400)  # 비밀번호가 틀렸을 때 예외 발
+        raise BadRequestException(f'{e}', 400)
 
 def find_quants_by_user():
     jwt_user = get_jwt_identity()
@@ -83,26 +89,36 @@ def find_quants_by_user():
     for quant in quants:
         stock_id = quant.stock
         stock = find_stock_by_id(stock_id)
-        recent_stock = stock["stock_history"][0]
+        recent_stock = stock["stock_info"]
 
         # 모델에서 가져온 값을 가정
-        previous_close = float(recent_stock['Prev_Close'])  # 모델에서 previousClose 값을 가져옴
-        last_cross_trend_follow = float(recent_stock['Prev_Trend_Follow'])  # 모델에서 lastCrossTrendFollow 값을 가져옴
+        previous_close = float(recent_stock['previousClose'])  # 모델에서 previousClose 값을 가져옴
+        last_cross_trend_follow = float(recent_stock['lastCrossTrendFollow'])  # 모델에서 lastCrossTrendFollow 값을 가져옴
 
         # 수익 및 수익률 계산
         profit = previous_close - last_cross_trend_follow
         profit_percent = (profit / previous_close) * 100
 
         # 결과 출력
-        print(f"Profit: {profit}")
-        print(f"Profit Percentage: {profit_percent}%")
         quant_one = {
-            "stock": stock_id,
+            "id": quant.uuid,
+            "ticker": stock_id,
+            "name": stock["stock_info"]["longName"],
             "profit": round(profit, 2),
             "profit_percent":  round(profit_percent, 2),
             "notification" : quant.notification,
             "quant_type" : quant.quant_type,
+            "current_status" : quant.current_status,
+            "initial_status" : quant.initial_status,
         }
         quants_dict.append(quant_one)
 
     return quants_dict
+
+def patch_quant_by_id(quant_id):
+    quant = Quant.query.filter_by(uuid=quant_id).first()
+    if quant is None:
+        raise BadRequestException('퀀트를 찾을 수 없습니다.', 400)
+    quant.notification = not quant.notification
+    db.session.commit()
+    return quant.to_dict()

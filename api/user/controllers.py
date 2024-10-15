@@ -1,6 +1,7 @@
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from api import user_api as api
 from flask_restx import Resource, fields
-from api.user.services import save_user, find_user
+from api.user.services import find_user_by_email, save_user, find_user
 
 email_field = fields.String(required=True, title='사용자 이메일', description="아이디로 사용됨", example='name@mail.dot',
                             pattern='([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
@@ -42,8 +43,15 @@ user_sign_in_response_model = api.model('UserSignInResponseModel', {
     'authorization' : fields.String(title='authorization token')
 })
 
+
+user_model = api.model('UserModel', {
+    'email': email_field,
+    'userName': name_field,
+})
+
+
 @api.route('/sign-in', strict_slashes=False)
-class Users(Resource):
+class UsersSignIn(Resource):
 
     @api.expect(user_sign_in_model)
     @api.marshal_with(user_sign_in_response_model)
@@ -51,3 +59,12 @@ class Users(Resource):
         user = api.payload
         saved_user = find_user(user=user)
         return saved_user
+
+@api.route('/', strict_slashes=False)
+class Users(Resource):
+    @jwt_required()
+    @api.marshal_with(user_response_model)
+    def get(self):
+        user = get_jwt_identity()
+        find_user = find_user_by_email(user)
+        return find_user
