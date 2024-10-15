@@ -52,7 +52,6 @@ trend_follows_register_response_model = api.model('TrendFollowsRegisterModel', {
 quant_by_user_model = api.model('QuantByUserModel', {
     'id': fields.String(title='id'),
     'ticker': fields.String(title='stock'),
-    'name': fields.String(title='stock name'),
     'quant_type': fields.String(title='stock quant_type'),
     'notification': fields.Boolean(title='notification'),
     'profit' : fields.String(title='profit'),

@@ -8,6 +8,7 @@ from api import db
 from api.quant.entityies import Quant
 from api.user.entities import User
 from exceptions import BadRequestException
+from exceptions import BadRequestException
 
 
 def find_stock_by_id(item_id, period='1y', trend_follow_days=75):
