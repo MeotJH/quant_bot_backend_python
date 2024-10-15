@@ -9,7 +9,13 @@ class Quant(db.Model):
     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     stock = db.Column(db.String(40), unique=False, nullable=False)
     notification = db.Column(db.Boolean, unique=False, nullable=False)
-    quant_type = db.Column(db.String(10), unique=False, nullable=False)
+    quant_type = db.Column(db.String(30), unique=False, nullable=False)
+
+
+    initial_price = db.Column(db.Float, unique=False, nullable=False)
+    initial_trend_follow = db.Column(db.Float, unique=False, nullable=False)
+    initial_status = db.Column(db.String(10), unique=False, nullable=False)
+    current_status = db.Column(db.String(10), unique=False, nullable=False)
 
     # user의 uuid를 외래 키로 가져옴
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('user.uuid'), nullable=False)

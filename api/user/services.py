@@ -20,3 +20,7 @@ def find_user(user):
     response_user = db_user.to_dict()
     response_user['authorization'] = create_access_token(identity=db_user.email)
     return response_user
+
+def find_user_by_email(email):
+    db_user = User.query.filter_by(email=email).first()
+    return db_user.to_dict()
