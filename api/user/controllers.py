@@ -10,11 +10,12 @@ mobile_field = fields.String(required=True, title='사용자 전화번호', desc
                              example='01012345678', pattern='^[0-9]+$', min_length=11, max_length=11)
 name_field = fields.String(required=True, title='사용자 이름', description='사용자 이름', example='MeotJH')
 
-user_request_model = api.model('UserRequestModel', {
+user_sign_up_model = api.model('UserSignUpModel', {
     'userName': name_field,
     'email': email_field,
     'password': password_field,
-    'mobile': mobile_field
+    'mobile': mobile_field,
+    'appToken': fields.String(required=True, title='앱 토큰', description='앱 토큰', example='uuid.uuid4'),
 })
 
 user_response_model = api.model('UserResponseModel', {
@@ -25,7 +26,7 @@ user_response_model = api.model('UserResponseModel', {
 @api.route('/sign-up', strict_slashes=False)
 class UserSignUp(Resource):
 
-    @api.expect(user_request_model)
+    @api.expect(user_sign_up_model)
     @api.marshal_with(user_response_model)
     def post(self):
         user = api.payload

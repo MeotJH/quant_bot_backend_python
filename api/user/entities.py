@@ -10,7 +10,7 @@ class User(db.Model):
     email = db.Column(db.String(60), unique=True, nullable=False)
     mobile = db.Column(db.String(11), unique=False, nullable=True)
     password = db.Column(db.String(512), nullable=False)
-
+    app_token = db.Column(db.String(512), nullable=True)
     # Quant와의 1:N 관계 설정 (backref로 양방향 액세스 가능)
     quants = db.relationship('Quant', backref='user', lazy=True)
 
