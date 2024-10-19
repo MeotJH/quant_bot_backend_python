@@ -11,6 +11,7 @@ from api.server_status import server_status_api
 from api.stock import stock_api
 from api.quant import quant_api
 from api.user import user_api
+from api.notification import notification_api
 from config import config_by_name
 from util.logging_util import logger
 
@@ -70,11 +71,13 @@ def create_app():
     api.add_namespace(stock_api)
     api.add_namespace(quant_api)
     api.add_namespace(user_api)
+    api.add_namespace(notification_api)
     # register controllers
     from api.server_status import controllers
     from api.stock import controllers
     from api.quant import controllers
     from api.user import controllers
+    from api.notification import controllers
 
     # enable CORS for front-end app
     CORS(app)

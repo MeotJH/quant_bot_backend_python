@@ -123,3 +123,11 @@ def patch_quant_by_id(quant_id):
     quant.notification = not quant.notification
     db.session.commit()
     return quant.to_dict()
+
+def delete_quant_by_id(quant_id):
+    quant = Quant.query.filter_by(uuid=quant_id).first()
+    if quant is None:
+        raise BadRequestException('퀀트를 찾을 수 없습니다.', 400)
+    db.session.delete(quant)
+    db.session.commit()
+    return quant.to_dict()
