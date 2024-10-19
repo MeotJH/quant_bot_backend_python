@@ -1,0 +1,43 @@
+name: CI/CD Pipeline for Python Server
+
+# GitHub Actions가 main 브랜치로 push될 때 실행됩니다.
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # Actions는 GitHub에서 실행되는 서버에서 수행됩니다.
+
+    steps:
+      # 1. 리포지토리 체크아웃 (CI 단계)
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      # 2. Python 환경 설정 및 테스트 실행 (CI 단계)
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # - name: Run tests
+      #   run: |
+      #     pytest tests/
+
+      # 3. 로컬 서버로 배포 (CD 단계)
+      - name: Install SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # GitHub Secrets에서 비공개 키 가져오기
+          chmod 600 ~/.ssh/id_rsa  # 비공개 키 권한 설정
+          ssh-keyscan -H 192.168.0.8 >> ~/.ssh/known_hosts  # 로컬 서버의 SSH 키를 known_hosts에 추가
+
+      - name: Deploy to Local Server
+        run: ssh your-username@192.168.0.8 'C:\quant_bot_deploy\deploy.bat'
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
