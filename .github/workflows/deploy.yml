@@ -25,7 +25,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       # 3. .ssh 디렉토리 생성 및 SSH 설정 (CD 단계)
       - name: Create .ssh directory
         run: mkdir -p ~/.ssh
@@ -34,12 +33,9 @@ jobs:
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # GitHub Secrets에서 비공개 키 가져오기
           chmod 600 ~/.ssh/id_rsa  # 비공개 키 권한 설정
-
       - name: Add server to known_hosts
-        run: ssh-keyscan -H 192.168.0.8 >> ~/.ssh/known_hosts  # 로컬 서버의 SSH 키를 known_hosts에 추가
+        run: ssh-keyscan -H 220.72.101.33 >> ~/.ssh/known_hosts  # 로컬 서버의 SSH 키를 known_hosts에 추가
 
       # 4. 로컬 서버로 배포 (CD 단계)
       - name: Deploy to Local Server
-        run: ssh your-username@192.168.0.8 'C:/quant_bot_deploy/deploy.bat'
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: ssh -i ~/.ssh/id_rsa MeotJH@220.72.101.33 'C:/quant_bot_deploy/deploy.bat'
