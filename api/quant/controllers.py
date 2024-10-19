@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from flask_restx import fields, Resource
 
 from api import quant_api as api
-from api.quant.services import find_stock_by_id, patch_quant_by_id, register_quant_by_stock, find_quants_by_user
+from api.quant.services import delete_quant_by_id, find_stock_by_id, patch_quant_by_id, register_quant_by_stock, find_quants_by_user
 
 trend_follow_model = api.model('TrendFollowModel', {
     'Date': fields.String(title='stock ticker'),
@@ -90,6 +90,13 @@ class Quant(Resource):
         quant_data = QuantData(**api.payload)
         stock = register_quant_by_stock(stock_id, quant_data)
         return stock
+    
+
+    @jwt_required()
+    @api.marshal_with(trend_follows_register_response_model)
+    def delete(self, stock_id):
+        deleted_response= delete_quant_by_id(stock_id)
+        return deleted_response, 200
 
 @api.route('/', strict_slashes=False)
 class Quants(Resource):

@@ -4,6 +4,10 @@ from http import HTTPStatus
 from api import create_app
 from util.logging_util import logger
 
+
+import firebase_admin
+from firebase_admin import credentials
+
 app = create_app()
 
 
@@ -44,5 +48,7 @@ def handle_root_exception(error):
 
 
 if __name__ == "__main__":
+    cred = credentials.Certificate("env/quant-bot-c9c4b-firebase-adminsdk-c83hh-2474897efe.json")
+    firebase_admin.initialize_app(cred)
     # 로컬 실행시 모듈이 2번 로딩되면 use_reloader=False 설정하면 됨.
     app.run(host="0.0.0.0", debug=True, port=8080)
