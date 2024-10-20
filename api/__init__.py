@@ -87,4 +87,15 @@ def create_app():
 
     from api.quant.entityies import Quant
     from api.user.entities import User
+
+    # 퀀트 스케줄러 시작
+    from api.quant.scheduler import QuantScheduler
+    quant_scheduler = QuantScheduler()
+    quant_scheduler.start()
+    
+    # 퀀트 스케줄러 종료
+    @app.teardown_appcontext
+    def shutdown_scheduler(exception=None):
+        quant_scheduler.shutdown()
+    
     return app

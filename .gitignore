@@ -1,6 +1,8 @@
 __pycache__/
+**/__pycache__/
 *.pyc
+*.pyo
+*.pyd
 .env
 .python-version
-
 env/quant-bot-c9c4b-firebase-adminsdk-c83hh-2474897efe.json
