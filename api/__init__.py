@@ -5,6 +5,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_restx import Api
 from werkzeug.utils import import_string
+from flask_jwt_extended import JWTManager
 
 from api.common import jwt
 from api.server_status import server_status_api
@@ -53,7 +54,7 @@ def create_app():
     app.config.from_object(config_object)
 
 
-    # 참조하는 모든 라이브러리의 로그 레벨을 변경하고 싶을때 아래 코드를 주석 풀면 모든 라이브러리의 로그가 출력된다.
+    # 참조하는 모든 라이브러리의 로그 레벨을 변경하고 싶을때 아래 코드를 주석 풀면 모든 라이��러리의 로그가 출력된다.
     # logger.set_level(None, app.config['LOG_LEVEL'])
 
     # 텝플릿 에서 사용하는 기본 logger 설정
@@ -82,20 +83,25 @@ def create_app():
     # enable CORS for front-end app
     CORS(app)
     # sqlalchemy 및 데이터베이스 DDL 관리 lib 
-    db.init_app(app)
-    migrate.init_app(app, db)
+    #db.init_app(app)
+    #migrate.init_app(app, db)
 
     from api.quant.entityies import Quant
     from api.user.entities import User
 
-    # 퀀트 스케줄러 시작
     from api.quant.scheduler import QuantScheduler
     quant_scheduler = QuantScheduler()
-    quant_scheduler.start()
-    
-    # 퀀트 스케줄러 종료
+
+    with app.app_context():
+        # 데이터베이스 초기화
+        db.init_app(app)
+        migrate.init_app(app, db)
+
+        # 스케줄러 시작
+        quant_scheduler.start()
+
     @app.teardown_appcontext
     def shutdown_scheduler(exception=None):
         quant_scheduler.shutdown()
-    
+
     return app
