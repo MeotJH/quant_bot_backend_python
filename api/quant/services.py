@@ -14,13 +14,7 @@ from exceptions import BadRequestException
 class QuantService:
     @staticmethod
     def find_stock_by_id(item_id, period='1y', trend_follow_days=75):
-        # 주식 데이터를 최근 period간 가져옴
-        stock_data = yf.Ticker(item_id).history(period=period)
-        stock_info = yf.Ticker(item_id).info
-
-        # 75일 이동평균선 계산
-        stock_data['Trend_Follow'] = stock_data['Close'].rolling(window=trend_follow_days).mean()
-
+        stock_data, stock_info = QuantService._get_stock_use_yfinance(item_id, period, trend_follow_days)
         # 마지막 교차점의 이동평균 값 가져오기
         last_cross_trend_follow = QuantService._find_last_cross_trend_follow(stock_data=stock_data)
         stock_info['lastCrossTrendFollow'] = last_cross_trend_follow
@@ -33,6 +27,14 @@ class QuantService:
             stock['Date'] = stock['Date'].strftime('%Y-%m-%d')
 
         return {'stock_history' : stocks_dict, 'stock_info': stock_info}
+
+    @staticmethod
+    def _get_stock_use_yfinance(item_id, period='1y', trend_follow_days=75):
+         # 주식 데이터를 최근 period간 가져옴
+        stock_data = yf.Ticker(item_id).history(period=period)
+        # 75일 이동평균선 계산
+        stock_data['Trend_Follow'] = stock_data['Close'].rolling(window=trend_follow_days).mean()
+        return {"stock_data": stock_data, "stock_info": yf.Ticker(item_id).info}
 
     @staticmethod
     def _find_last_cross_trend_follow(stock_data: dict):
@@ -141,13 +143,30 @@ class QuantService:
         # 새로운 메서드: 스케줄러에서 호출될 메서드
         quants = Quant.query.filter_by(notification=True).all()
         for quant in quants:
-            if self._should_notify(quant):
+            today_stock = QuantService._get_stock_use_yfinance(quant.stock, period='1y', trend_follow_days=75)['stock_data'][0]
+            if self._should_notify(quant, today_stock):
+                self._update_stock(quant,today_stock)
                 self._send_notification(quant)
+    
+    def _update_stock(self, quant:Quant, today_stock:dict):
+        quant.current_status = 'BUY' if today_stock['Close'] < today_stock["Trend_Follow"] else 'SELL'
+        quant.last_send_status = quant.current_status
+        db.session.commit()
 
-    def _should_notify(self, quant):
-        # 알림 조건을 확인하는 로직
-        # 예: 주가가 특정 조건을 만족하는지 확인
-        return True  # 임시로 항상 True 반환
+    def _should_notify(self, quant: Quant, today_stock:dict):
+        if( quant.notification == False):
+            return False
+        
+        if( today_stock['Close'] < today_stock["Trend_Follow"]):
+            current_status = 'BUY'
+        else:
+            current_status = 'SELL'
+        
+        # 상태가 변경되고 마지막으로 알림을 보낸 상태가 아니면 알림을 보냄
+        if( current_status != quant.current_status and quant.last_send_status != quant.current_status):
+            return True
+            
+        return False
 
     def _send_notification(self, quant):
         # 알림을 보내는 로직

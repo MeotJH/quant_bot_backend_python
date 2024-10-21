@@ -14,8 +14,12 @@ class Quant(db.Model):
 
     initial_price = db.Column(db.Float, unique=False, nullable=False)
     initial_trend_follow = db.Column(db.Float, unique=False, nullable=False)
+    # 처음 저장한 상태
     initial_status = db.Column(db.String(10), unique=False, nullable=False)
+    # 현재 상태 notification 을 보내기 위해서 계속 바뀌는 값
     current_status = db.Column(db.String(10), unique=False, nullable=False)
+    # 마지막 알림 상태
+    last_send_status = db.Column(db.String(10), unique=False, nullable=False)
 
     # user의 uuid를 외래 키로 가져옴
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('user.uuid'), nullable=False)
