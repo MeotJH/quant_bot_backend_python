@@ -14,19 +14,19 @@ from exceptions import BadRequestException
 class QuantService:
     @staticmethod
     def find_stock_by_id(item_id, period='1y', trend_follow_days=75):
-        stock_data, stock_info = QuantService._get_stock_use_yfinance(item_id, period, trend_follow_days)
+        yfinance = QuantService._get_stock_use_yfinance(item_id, period, trend_follow_days)
         # 마지막 교차점의 이동평균 값 가져오기
-        last_cross_trend_follow = QuantService._find_last_cross_trend_follow(stock_data=stock_data)
-        stock_info['lastCrossTrendFollow'] = last_cross_trend_follow
+        last_cross_trend_follow = QuantService._find_last_cross_trend_follow(stock_data=yfinance['stock_data'])
+        yfinance['stock_info']['lastCrossTrendFollow'] = last_cross_trend_follow
 
-        stock_data = stock_data.sort_index(ascending=False)
+        stock_data = yfinance['stock_data'].sort_index(ascending=False)
         stock_data = stock_data.dropna(subset=['Trend_Follow'])
         # 결과를 딕셔너리 형태로 변환하여 반환
         stocks_dict = stock_data.reset_index().to_dict(orient='records')
         for stock in stocks_dict:
             stock['Date'] = stock['Date'].strftime('%Y-%m-%d')
 
-        return {'stock_history' : stocks_dict, 'stock_info': stock_info}
+        return {'stock_history' : stocks_dict, 'stock_info': yfinance['stock_info']}
 
     @staticmethod
     def _get_stock_use_yfinance(item_id, period='1y', trend_follow_days=75):
