@@ -7,7 +7,7 @@ class NotificationService:
 
     def send_notification(self, notification: Notification):
         try:
-            token = self.get_user_token(notification.user_mail)
+            token = self._get_user_token(notification.user_mail)
             message = messaging.Message(
                 notification=messaging.Notification(
                     title=notification.title,

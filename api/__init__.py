@@ -100,8 +100,7 @@ def create_app():
         # 스케줄러 시작
         quant_scheduler.start()
 
-    @app.teardown_appcontext
-    def shutdown_scheduler(exception=None):
-        quant_scheduler.shutdown()
+    import atexit
+    atexit.register(quant_scheduler.shutdown)
 
     return app

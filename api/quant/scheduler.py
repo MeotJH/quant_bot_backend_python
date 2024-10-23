@@ -3,6 +3,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from api.quant.services import QuantService
 import logging
 from apscheduler.schedulers.base import SchedulerNotRunningError
+from apscheduler.triggers.cron import CronTrigger
+from pytz import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +21,14 @@ class QuantScheduler:
 
     def start(self):
         if not self.scheduler.running:
-            self.scheduler.add_job(self._run_check_and_notify, 'interval', seconds=10)
+            # 한국 시간 밤 10:30과 11:30에 실행
+            self.scheduler.add_job(
+                self._run_check_and_notify, 
+                trigger=CronTrigger(hour='22', minute=30),
+                timezone=timezone('Asia/Seoul')
+            )
             self.scheduler.start()
-            logger.info("Quant Scheduler started")
+            logger.info("Quant Scheduler started, will run daily at 10:30 PM and 11:30 PM KST")
         else:
             logger.info("Quant Scheduler is already running")
 
@@ -32,6 +39,6 @@ class QuantScheduler:
     def shutdown(self):
         if self.scheduler.running:
             logger.info("Shutting down Quant Scheduler")
-            self.scheduler.shutdown()
+            self.scheduler.shutdown(wait=False)
         else:
             logger.warning("Quant Scheduler is not running")

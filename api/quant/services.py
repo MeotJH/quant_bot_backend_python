@@ -1,4 +1,5 @@
 from numbers import Number
+import traceback
 
 from flask import current_app
 
@@ -149,14 +150,18 @@ class QuantService:
             quants = Quant.query.filter_by(notification=True).all()
             logger.info(f"{len(quants)}개의 알림이 있는 항목을 찾았습니다")
             for quant in quants:
-                today_stock = QuantService._get_stock_use_yfinance(
+                stock_data = QuantService._get_stock_use_yfinance(
                     quant.stock, period='1y', trend_follow_days=75
-                )['stock_data'][0]
+                )['stock_data']
+                today_stock = stock_data.iloc[-1]  # 가장 최근 데이터
+                
+                logger.info(f"today_stock: {today_stock}")
                 if self._should_notify(quant, today_stock):
                     self._update_stock(quant, today_stock)
                     self._send_notification(quant)
         except Exception as e:
-            logger.error(f"Error in check_and_notify: {e}")
+            logger.error(f"Error in check_and_notify: {str(e)}")
+            logger.error(traceback.format_exc())
     
     def _update_stock(self, quant:Quant, today_stock:dict):
         quant.current_status = 'BUY' if today_stock['Close'] < today_stock["Trend_Follow"] else 'SELL'
@@ -174,10 +179,10 @@ class QuantService:
             current_status = 'SELL'
         
         # 상태가 변경되고 마지막으로 알림을 보낸 상태가 아니면 알림을 보냄
-        print('this is current_status', current_status)
-        print('this is quant.current_status', quant.current_status)
-        print('this is quant.last_send_status', quant.last_send_status)
-        if( current_status != quant.current_status and quant.last_send_status != quant.current_status):
+        logger.info('this is current_status', current_status)
+        logger.info('this is quant.current_status', quant.current_status)
+        
+        if( current_status != quant.current_status):
             print(f'this is True')
             return True
             
@@ -189,8 +194,10 @@ class QuantService:
         NotificationService().send_notification(notification)
 
     def _create_notification(self, quant):
+        logger.info(f'this is quant.user.email: {quant.user.email}')
         return Notification(
             title=f"퀀투봇 [{quant.quant_type}]",
             body=f"{quant.stock}의 상태가 변경되었습니다. 확인해주세요.",
             user_mail=quant.user.email
         )
+
