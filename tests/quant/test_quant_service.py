@@ -15,6 +15,7 @@ def mock_db_session():
 def quant_service():
     return QuantService()
 
+# 알림 확인 테스트
 def test_check_and_notify(quant_service, mock_db_session):
     # GIVEN
     # 테스트용 Quant 객체 생성

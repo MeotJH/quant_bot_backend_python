@@ -25,5 +25,6 @@ class NotificationService:
     def _get_user_token(self, email: str) -> str:
         user = User.query.filter_by(email=email).first()
         if user:
+            print(f'this is user Token: {user.app_token}')
             return user.app_token
         raise ValueError("User not found or token missing")

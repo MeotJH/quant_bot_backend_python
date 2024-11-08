@@ -1,6 +1,6 @@
 name: CI/CD Pipeline for Python Server
 
-# GitHub Actions가 main 브랜치로 push될 때 실행됩니다.
+
 on:
   push:
     branches:
@@ -8,10 +8,10 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest # GitHub Actions 서버에서 작업이 실행됩니다.
+    runs-on: ubuntu-latest 
 
     steps:
-      # 1. 리포지토리 체크아웃 (CI 단계)
+     
       - name: Check out the repository
         uses: actions/checkout@v2
 
@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      # 3. .ssh 디렉토리 생성 및 SSH 설정 (CD 단계)
+
       - name: Create .ssh directory
         run: mkdir -p ~/.ssh
 
@@ -36,6 +36,5 @@ jobs:
       - name: Add server to known_hosts
         run: ssh-keyscan -H 220.72.101.33 >> ~/.ssh/known_hosts  # 로컬 서버의 SSH 키를 known_hosts에 추가
 
-      # 4. 로컬 서버로 배포 (CD 단계)
       - name: Deploy to Local Server
         run: ssh -i ~/.ssh/id_rsa MeotJH@220.72.101.33 'C:/quant_bot_deploy/deploy.bat'

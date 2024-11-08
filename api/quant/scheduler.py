@@ -4,6 +4,7 @@ from api.quant.services import QuantService
 import logging
 from apscheduler.schedulers.base import SchedulerNotRunningError
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from pytz import timezone
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,8 @@ class QuantScheduler:
             # 한국 시간 밤 10:30과 11:30에 실행
             self.scheduler.add_job(
                 self._run_check_and_notify, 
-                trigger=CronTrigger(hour='22', minute=30),
+                #trigger=CronTrigger(hour='22', minute=30),
+                trigger=IntervalTrigger(seconds=10),
                 timezone=timezone('Asia/Seoul')
             )
             self.scheduler.start()

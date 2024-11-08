@@ -14,7 +14,7 @@ from api.quant.entities import Quant
 from api.user.entities import User
 from exceptions import BadRequestException
 from util.logging_util import logger
-
+from util.transactional_util import transaction_scope
 
 class QuantService:
     @staticmethod
@@ -78,6 +78,7 @@ class QuantService:
             initial_status=quant_data.initial_status,
             current_status=quant_data.initial_status,
             notification=True,
+            last_send_status=quant_data.initial_status,
             user_id=user.uuid
         )
 
@@ -149,16 +150,19 @@ class QuantService:
             logger.info("로그가 호출되었습니다!!!!!")
             quants = Quant.query.filter_by(notification=True).all()
             logger.info(f"{len(quants)}개의 알림이 있는 항목을 찾았습니다")
+            
             for quant in quants:
                 stock_data = QuantService._get_stock_use_yfinance(
                     quant.stock, period='1y', trend_follow_days=75
                 )['stock_data']
-                today_stock = stock_data.iloc[-1]  # 가장 최근 데이터
+                today_stock = stock_data.iloc[-1]
                 
                 logger.info(f"today_stock: {today_stock}")
                 if self._should_notify(quant, today_stock):
-                    self._update_stock(quant, today_stock)
-                    self._send_notification(quant)
+                    with transaction_scope():
+                        self._update_stock(quant, today_stock)
+                        self._send_notification(quant)
+                        
         except Exception as e:
             logger.error(f"Error in check_and_notify: {str(e)}")
             logger.error(traceback.format_exc())
@@ -166,7 +170,6 @@ class QuantService:
     def _update_stock(self, quant:Quant, today_stock:dict):
         quant.current_status = 'BUY' if today_stock['Close'] < today_stock["Trend_Follow"] else 'SELL'
         quant.last_send_status = quant.current_status
-        db.session.commit()
 
     def _should_notify(self, quant: Quant, today_stock:dict):
         logger.info("Quant Scheduler started")
@@ -179,8 +182,8 @@ class QuantService:
             current_status = 'SELL'
         
         # 상태가 변경되고 마지막으로 알림을 보낸 상태가 아니면 알림을 보냄
-        logger.info('this is current_status', current_status)
-        logger.info('this is quant.current_status', quant.current_status)
+        logger.info(f'this is current_status {current_status}')
+        logger.info(f'this is quant.current_status {quant.current_status}')
         
         if( current_status != quant.current_status):
             print(f'this is True')
