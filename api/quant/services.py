@@ -78,9 +78,9 @@ class QuantService:
             initial_status=quant_data.initial_status,
             current_status=quant_data.initial_status,
             notification=True,
-            last_send_status=quant_data.initial_status,
             user_id=user.uuid
         )
+        
 
         try:
             db.session.add(new_quant)
@@ -123,6 +123,7 @@ class QuantService:
                 "current_status" : quant.current_status,
                 "initial_status" : quant.initial_status,
             }
+            
             quants_dict.append(quant_one)
 
         return quants_dict
@@ -168,15 +169,15 @@ class QuantService:
             logger.error(traceback.format_exc())
     
     def _update_stock(self, quant:Quant, today_stock:dict):
-        quant.current_status = 'BUY' if today_stock['Close'] < today_stock["Trend_Follow"] else 'SELL'
-        quant.last_send_status = quant.current_status
+        quant.current_status = 'BUY' if today_stock['Close'] > today_stock["Trend_Follow"] else 'SELL'
 
     def _should_notify(self, quant: Quant, today_stock:dict):
         logger.info("Quant Scheduler started")
         if( quant.notification == False):
             return False
         
-        if( today_stock['Close'] < today_stock["Trend_Follow"]):
+        # 주가가 이동평균선 위에 있으면 BUY, 아래에 있으면 SELL
+        if( today_stock['Close'] >= today_stock["Trend_Follow"]):
             current_status = 'BUY'
         else:
             current_status = 'SELL'
