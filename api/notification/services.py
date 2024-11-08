@@ -7,7 +7,7 @@ class NotificationService:
 
     def send_notification(self, notification: Notification):
         try:
-            token = self.get_user_token(notification.user_mail)
+            token = self._get_user_token(notification.user_mail)
             message = messaging.Message(
                 notification=messaging.Notification(
                     title=notification.title,
@@ -25,5 +25,6 @@ class NotificationService:
     def _get_user_token(self, email: str) -> str:
         user = User.query.filter_by(email=email).first()
         if user:
+            print(f'this is user Token: {user.app_token}')
             return user.app_token
         raise ValueError("User not found or token missing")

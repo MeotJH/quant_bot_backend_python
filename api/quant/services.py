@@ -1,38 +1,45 @@
 from numbers import Number
+import traceback
+
+from flask import current_app
 
 from api.notification.models import Notification
+from api.notification.services import NotificationService
 from api.quant.model import QuantData
 import yfinance as yf
 from flask_jwt_extended import get_jwt_identity
 
 from api import db
-from api.quant.entityies import Quant
+from api.quant.entities import Quant
 from api.user.entities import User
 from exceptions import BadRequestException
-
+from util.logging_util import logger
+from util.transactional_util import transaction_scope
 
 class QuantService:
     @staticmethod
     def find_stock_by_id(item_id, period='1y', trend_follow_days=75):
-        # 주식 데이터를 최근 period간 가져옴
-        stock_data = yf.Ticker(item_id).history(period=period)
-        stock_info = yf.Ticker(item_id).info
-
-        # 75일 이동평균선 계산
-        stock_data['Trend_Follow'] = stock_data['Close'].rolling(window=trend_follow_days).mean()
-
+        yfinance = QuantService._get_stock_use_yfinance(item_id, period, trend_follow_days)
         # 마지막 교차점의 이동평균 값 가져오기
-        last_cross_trend_follow = QuantService._find_last_cross_trend_follow(stock_data=stock_data)
-        stock_info['lastCrossTrendFollow'] = last_cross_trend_follow
+        last_cross_trend_follow = QuantService._find_last_cross_trend_follow(stock_data=yfinance['stock_data'])
+        yfinance['stock_info']['lastCrossTrendFollow'] = last_cross_trend_follow
 
-        stock_data = stock_data.sort_index(ascending=False)
+        stock_data = yfinance['stock_data'].sort_index(ascending=False)
         stock_data = stock_data.dropna(subset=['Trend_Follow'])
         # 결과를 딕셔너리 형태로 변환하여 반환
         stocks_dict = stock_data.reset_index().to_dict(orient='records')
         for stock in stocks_dict:
             stock['Date'] = stock['Date'].strftime('%Y-%m-%d')
 
-        return {'stock_history' : stocks_dict, 'stock_info': stock_info}
+        return {'stock_history' : stocks_dict, 'stock_info': yfinance['stock_info']}
+
+    @staticmethod
+    def _get_stock_use_yfinance(item_id, period='1y', trend_follow_days=75):
+         # 주식 데이터를 최근 period간 가져옴
+        stock_data = yf.Ticker(item_id).history(period=period)
+        # 75일 이동평균선 계산
+        stock_data['Trend_Follow'] = stock_data['Close'].rolling(window=trend_follow_days).mean()
+        return {"stock_data": stock_data, "stock_info": yf.Ticker(item_id).info}
 
     @staticmethod
     def _find_last_cross_trend_follow(stock_data: dict):
@@ -73,6 +80,7 @@ class QuantService:
             notification=True,
             user_id=user.uuid
         )
+        
 
         try:
             db.session.add(new_quant)
@@ -115,6 +123,7 @@ class QuantService:
                 "current_status" : quant.current_status,
                 "initial_status" : quant.initial_status,
             }
+            
             quants_dict.append(quant_one)
 
         return quants_dict
@@ -138,25 +147,61 @@ class QuantService:
         return quant.to_dict()
 
     def check_and_notify(self):
-        # 새로운 메서드: 스케줄러에서 호출될 메서드
-        quants = Quant.query.filter_by(notification=True).all()
-        for quant in quants:
-            if self._should_notify(quant):
-                self._send_notification(quant)
+        try:
+            logger.info("로그가 호출되었습니다!!!!!")
+            quants = Quant.query.filter_by(notification=True).all()
+            logger.info(f"{len(quants)}개의 알림이 있는 항목을 찾았습니다")
+            
+            for quant in quants:
+                stock_data = QuantService._get_stock_use_yfinance(
+                    quant.stock, period='1y', trend_follow_days=75
+                )['stock_data']
+                today_stock = stock_data.iloc[-1]
+                
+                logger.info(f"today_stock: {today_stock}")
+                if self._should_notify(quant, today_stock):
+                    with transaction_scope():
+                        self._update_stock(quant, today_stock)
+                        self._send_notification(quant)
+                        
+        except Exception as e:
+            logger.error(f"Error in check_and_notify: {str(e)}")
+            logger.error(traceback.format_exc())
+    
+    def _update_stock(self, quant:Quant, today_stock:dict):
+        quant.current_status = 'BUY' if today_stock['Close'] > today_stock["Trend_Follow"] else 'SELL'
 
-    def _should_notify(self, quant):
-        # 알림 조건을 확인하는 로직
-        # 예: 주가가 특정 조건을 만족하는지 확인
-        return True  # 임시로 항상 True 반환
+    def _should_notify(self, quant: Quant, today_stock:dict):
+        logger.info("Quant Scheduler started")
+        if( quant.notification == False):
+            return False
+        
+        # 주가가 이동평균선 위에 있으면 BUY, 아래에 있으면 SELL
+        if( today_stock['Close'] >= today_stock["Trend_Follow"]):
+            current_status = 'BUY'
+        else:
+            current_status = 'SELL'
+        
+        # 상태가 변경되고 마지막으로 알림을 보낸 상태가 아니면 알림을 보냄
+        logger.info(f'this is current_status {current_status}')
+        logger.info(f'this is quant.current_status {quant.current_status}')
+        
+        if( current_status != quant.current_status):
+            print(f'this is True')
+            return True
+            
+        return False
 
     def _send_notification(self, quant):
         # 알림을 보내는 로직
         notification = self._create_notification(quant)
-        # NotificationService().send_notification(notification)
+        NotificationService().send_notification(notification)
 
     def _create_notification(self, quant):
+        logger.info(f'this is quant.user.email: {quant.user.email}')
         return Notification(
             title=f"퀀투봇 [{quant.quant_type}]",
             body=f"{quant.stock}의 상태가 변경되었습니다. 확인해주세요.",
             user_mail=quant.user.email
         )
+

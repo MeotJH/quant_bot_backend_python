@@ -17,7 +17,6 @@ class Quant(Resource):
     @api.marshal_with(trend_follows_model)
     def get(self, stock_id=None):
         stock = self.quant_service.find_stock_by_id(stock_id)
-        print(stock['stock_info'])
         return { 'stock_history': stock['stock_history'] , 'stock_info': stock['stock_info']}
 
     @jwt_required()

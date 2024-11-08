@@ -54,7 +54,7 @@ def create_app():
     app.config.from_object(config_object)
 
 
-    # 참조하는 모든 라이브러리의 로그 레벨을 변경하고 싶을때 아래 코드를 주석 풀면 모든 라이��러리의 로그가 출력된다.
+    # 참조하는 모든 라이브러리의 로그 레벨을 변경하고 싶을때 아래 코드를 주석 풀면 모든 라이브러리의 로그가 출력된다.
     # logger.set_level(None, app.config['LOG_LEVEL'])
 
     # 텝플릿 에서 사용하는 기본 logger 설정
@@ -86,11 +86,11 @@ def create_app():
     #db.init_app(app)
     #migrate.init_app(app, db)
 
-    from api.quant.entityies import Quant
+    from api.quant.entities import Quant
     from api.user.entities import User
 
     from api.quant.scheduler import QuantScheduler
-    quant_scheduler = QuantScheduler()
+    quant_scheduler = QuantScheduler(app)  # app 인스턴스를 전달
 
     with app.app_context():
         # 데이터베이스 초기화
@@ -100,8 +100,7 @@ def create_app():
         # 스케줄러 시작
         quant_scheduler.start()
 
-    @app.teardown_appcontext
-    def shutdown_scheduler(exception=None):
-        quant_scheduler.shutdown()
+    import atexit
+    atexit.register(quant_scheduler.shutdown)
 
     return app
