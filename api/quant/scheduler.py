@@ -25,8 +25,8 @@ class QuantScheduler:
             # 한국 시간 밤 10:30과 11:30에 실행
             self.scheduler.add_job(
                 self._run_check_and_notify, 
-                #trigger=CronTrigger(hour='22', minute=30),
-                trigger=IntervalTrigger(seconds=10),
+                trigger=CronTrigger(hour='22', minute=30),
+                #trigger=IntervalTrigger(seconds=10),
                 timezone=timezone('Asia/Seoul')
             )
             self.scheduler.start()
