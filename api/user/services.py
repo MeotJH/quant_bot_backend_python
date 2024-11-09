@@ -2,21 +2,27 @@ from api.user.entities import User
 from api import db
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
-from exceptions import UnauthorizedException
+from exceptions import BadRequestException, UnauthorizedException
 from flask_jwt_extended import create_access_token, get_jwt_identity
+from sqlalchemy.exc import IntegrityError
 
 def save_user(user):
-    id = uuid4()
-    password_hash = generate_password_hash(user['password'])
+    try:
+        id = uuid4()
+        password_hash = generate_password_hash(user['password'])
 
-    if user['appToken'] is None:
-        app_token = ''
-    else:
-        app_token = user['appToken']
-
-    new_user = User(uuid=id, username=user['userName'], email=user['email'], password=password_hash, app_token=app_token)
-    db.session.add(new_user)
-    db.session.commit()
+        new_user = User(uuid=id,
+                        username=user['userName'],
+                        email=user['email'],
+                        password=password_hash,
+                        app_token=user.get('appToken', '')
+                        )
+        db.session.add(new_user)
+        db.session.commit()
+    #IntegrityError DB중복 예외처리
+    except IntegrityError as e:
+        db.session.rollback()
+        raise BadRequestException(f'{e.orig}', 400)
     return new_user.to_dict()
 
 def find_user(user):
