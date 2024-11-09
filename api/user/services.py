@@ -9,12 +9,12 @@ def save_user(user):
     id = uuid4()
     password_hash = generate_password_hash(user['password'])
 
-    if user['appToken'] is None:
-        app_token = ''
-    else:
-        app_token = user['appToken']
-
-    new_user = User(uuid=id, username=user['userName'], email=user['email'], password=password_hash, app_token=app_token)
+    new_user = User(uuid=id,
+                    username=user['userName'],
+                    email=user['email'],
+                    password=password_hash,
+                    app_token=user.get('appToken', '')
+                    )
     db.session.add(new_user)
     db.session.commit()
     return new_user.to_dict()
