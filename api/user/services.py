@@ -3,7 +3,7 @@ from api import db
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
 from exceptions import UnauthorizedException
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, get_jwt_identity
 
 def save_user(user):
     id = uuid4()
@@ -24,3 +24,10 @@ def find_user(user):
 def find_user_by_email(email):
     db_user = User.query.filter_by(email=email).first()
     return db_user.to_dict()
+
+def update_user_fcm_token(newToken):
+    email = get_jwt_identity()
+    db_user = User.query.filter_by(email=email).first()
+    db_user.app_token = newToken
+    db.session.commit()
+    return True
