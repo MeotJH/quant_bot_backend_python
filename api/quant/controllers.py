@@ -36,17 +36,21 @@ class TrendFollow(Resource):
 
 # 개별 거래 기록을 위한 모델
 trade_record_model = api.model('TradeRecord', {
-    'Date': fields.DateTime,
-    'Best_ETF': fields.String,
-    '6M_Return': fields.Float(allow_none=True),
-    'Capital': fields.Float
+    'date': fields.DateTime,
+    'best_etf': fields.String,
+    '6m_return': fields.Float(allow_none=True),
+    'capital': fields.Float,
+    'cash_hold': fields.Float,
+    'ewy_hold': fields.Float
 })
 
 # 요약 정보를 위한 모델
 summary_model = api.model('Summary', {
     'initial_capital': fields.Float,
     'final_capital': fields.Float,
-    'total_return': fields.Float
+    'total_return': fields.Float,
+    'cash_hold_return': fields.Float,
+    'ewy_hold_return': fields.Float
 })
 
 # 전체 응답을 위한 모델
