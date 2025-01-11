@@ -6,3 +6,4 @@ __pycache__/
 .env
 .python-version
 env/quant-bot-c9c4b-firebase-adminsdk-c83hh-2474897efe.json
+/ssh_cmd.md

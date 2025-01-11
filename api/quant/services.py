@@ -124,6 +124,7 @@ class QuantService:
                 "initial_status" : quant.initial_status,
             }
             
+            logger.info(f'this is quant_one: {quant_one}')
             quants_dict.append(quant_one)
 
         return quants_dict

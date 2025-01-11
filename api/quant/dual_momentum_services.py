@@ -2,8 +2,11 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from logging import getLogger
+
+from api.quant.model import QuantData, RebalancingRecommendation
+from api.quant.services import QuantService
 
 logger = getLogger(__name__)
 
@@ -172,10 +175,64 @@ def run_dual_momentum_backtest(
     backtest = DualMomentumBacktest(etf_symbols, duration, savings_rate)
     return backtest.run_backtest()
 
-# etf_symbols = ['SPY', 'FEZ', 'EWJ', 'EWY']
-# end_date = datetime.today()
-# start_date = end_date - timedelta(days=10 * 365)
-# savings_rate = 3.0
 
-# results = run_dual_momentum_backtest(etf_symbols, 10, savings_rate)
-# print(results)
+def get_todays_dual_momentum(saved_symbol: str, etf_symbols: List[str], savings_rate: float = 3.0) -> RebalancingRecommendation:
+    """
+    매월 1일 리밸런싱 추천
+    
+    Args:
+        saved_symbol: 현재 보유 중인 심볼
+        etf_symbols: ETF 심볼 리스트 (예: ['SPY', 'FEZ', 'EWJ'])
+        savings_rate: 현금 보유시 연간 수익률 (기본값 3.0%)
+    
+    Returns:
+        RebalancingRecommendation: 리밸런싱 추천 정보를 담은 데이터 클래스
+    
+    Raises:
+        ValueError: duration이나 savings_rate가 잘못된 형식일 때
+        Exception: 기타 에러 발생시
+    """
+    
+    check_date = datetime.today()
+    backtest = DualMomentumBacktest(
+        etf_symbols=etf_symbols,
+        duration="1",
+        savings_rate=str(savings_rate)
+    )
+    
+    returns, _ = backtest._calculate_returns(check_date)
+    cash_return = (float(savings_rate) / 100) * 0.5 * 100
+    
+    if all(returns <= cash_return):
+        recommendation = 'cash'
+        best_return = cash_return
+    else:
+        recommendation = returns.idxmax().lower()
+        best_return = float(returns.max())
+    
+    should_rebalance = saved_symbol != recommendation
+    
+    return RebalancingRecommendation(
+        date=check_date.strftime('%Y-%m-%d'),
+        recommendation=recommendation,
+        returns={symbol.lower(): float(returns[symbol]) for symbol in etf_symbols},
+        best_return=best_return,
+        cash_return=cash_return,
+        should_rebalance=should_rebalance
+    )
+
+def save_dual_momentum(type: str):
+    #quant_data = QuantData(**api.payload)
+    #etfSymbols: ['SPY', 'FEZ', 'EWJ', 'EWY'],
+    momentum = get_todays_dual_momentum('cash', ['SPY', 'FEZ', 'EWJ', 'EWY'], 3.0)
+    logger.info(f'this is momentum: {asdict(momentum)}')
+
+    quant_data = QuantData(
+        stock=momentum.recommendation,
+        quant_type=type,
+        initial_price=0.0,
+        initial_status=momentum.recommendation,
+        initial_trend_follow=0.0,
+    )
+    return QuantService.register_quant_by_stock(momentum.recommendation, quant_data)
+    

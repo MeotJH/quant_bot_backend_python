@@ -4,7 +4,7 @@ from flask_restx import Resource, fields
 from flask import request
 from api import quant_api as api
 from api.quant.services import QuantService
-from api.quant.dual_momentum_services import run_dual_momentum_backtest
+from api.quant.dual_momentum_services import run_dual_momentum_backtest, save_dual_momentum
 from .response_models import trend_follows_model, trend_follows_register_response_model, quants_model, quant_by_user_model, quant_data_model
 
 @api.route('/trend_follow/<string:stock_id>', strict_slashes=False)
@@ -59,6 +59,12 @@ backtest_response_model = api.model('BacktestResponse', {
     'summary': fields.Nested(summary_model)
 })
 
+request_post_dual_momentum_model = api.model('SaveDualMomentumModel', {
+    'type' : fields.String(title='EBITDA'),
+})
+
+
+
 
 @api.route('/dual_momentum', strict_slashes=False)
 class DualMomentum(Resource):
@@ -89,6 +95,15 @@ class DualMomentum(Resource):
         savings_rate = float(request.args.get('savings_rate', 3.0))
         
         return run_dual_momentum_backtest(etf_symbols, duration, savings_rate), 200
+    
+    @jwt_required()
+    @api.expect(request_post_dual_momentum_model)
+    @api.marshal_with(trend_follows_register_response_model)
+    def post(self):
+       #quant_data = QuantData(**api.payload)
+
+        type = api.payload['type']
+        return save_dual_momentum(type)
 
 @api.route('/', strict_slashes=False)
 class Quants(Resource):

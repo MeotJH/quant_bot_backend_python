@@ -27,6 +27,11 @@ def save_user(user):
 
 def find_user(user):
     db_user = User.query.filter_by(email=user['email']).first()
+
+
+    if not db_user:
+        raise UnauthorizedException('Invalid email', 'INVALID_EMAIL')  # 이메일이 없을 때 예외 발생
+    
     if not check_password_hash(db_user.password, user['password']):
         raise UnauthorizedException('Invalid password', 'INVALID_PASSWORD')  # 비밀번호가 틀렸을 때 예외 발생
     response_user = db_user.to_dict()
