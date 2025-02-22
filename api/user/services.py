@@ -2,7 +2,7 @@ from api.user.entities import User
 from api import db
 from uuid import uuid4
 from werkzeug.security import generate_password_hash, check_password_hash
-from exceptions import BadRequestException, UnauthorizedException
+from exceptions import BadRequestException, UnauthorizedException, UserAlreadyExistException
 from flask_jwt_extended import create_access_token, get_jwt_identity
 from sqlalchemy.exc import IntegrityError
 
@@ -22,7 +22,7 @@ def save_user(user):
     #IntegrityError DB중복 예외처리
     except IntegrityError as e:
         db.session.rollback()
-        raise BadRequestException(f'{e.orig}', 400)
+        raise UserAlreadyExistException(f'중복된 메일 입니다 😞😞', 409)
     return new_user.to_dict()
 
 def find_user(user):
