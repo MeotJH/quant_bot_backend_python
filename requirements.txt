@@ -93,5 +93,5 @@ urllib3==1.26.19
 webencodings==0.5.1
 Werkzeug==3.0.4
 yarl==1.15.4
-yfinance==0.2.42
+yfinance==0.2.54
 zipp==3.20.0

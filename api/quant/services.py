@@ -36,9 +36,12 @@ class QuantService:
     @staticmethod
     def _get_stock_use_yfinance(item_id, period='1y', trend_follow_days=75):
          # 주식 데이터를 최근 period간 가져옴
+        print(f"this is tickername :::: {item_id}")
         stock_data = yf.Ticker(item_id).history(period=period)
         # 75일 이동평균선 계산
         stock_data['Trend_Follow'] = stock_data['Close'].rolling(window=trend_follow_days).mean()
+
+        print(f"{stock_data['Trend_Follow']} :::: <<<<")
         return {"stock_data": stock_data, "stock_info": yf.Ticker(item_id).info}
 
     @staticmethod

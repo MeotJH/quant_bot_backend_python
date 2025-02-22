@@ -30,19 +30,37 @@ class DualMomentumBacktest:
         self.df = self._fetch_data()
         
     def _fetch_data(self) -> pd.DataFrame:
-        """ETF 데이터 가져오기"""
+        """ETF 데이터 가져오기
+        
+        각 ETF 심볼에 대해 yfinance에서 'Close' 데이터를 다운로드한 후,
+        pd.concat()을 사용해 심볼을 컬럼으로 하는 DataFrame으로 결합합니다.
+        """
         data = {}
+        start_date_str = self.start_date.strftime('%Y-%m-%d')
+        end_date_str = self.end_date.strftime('%Y-%m-%d')
+        
         for symbol in self.etf_symbols:
             try:
-                etf_data = yf.download(
-                    symbol, 
-                    start=self.start_date.strftime('%Y-%m-%d'),
-                    end=self.end_date.strftime('%Y-%m-%d')
-                )
-                data[symbol] = etf_data['Close']
+                etf_data = yf.download(symbol, start=start_date_str, end=end_date_str)
+                if not etf_data.empty and 'Close' in etf_data.columns:
+                    # 'Close' 컬럼을 Series로 저장
+                    data[symbol] = etf_data['Close']
+                else:
+                    logger.error(f"No data or 'Close' column for symbol: {symbol}")
             except Exception as e:
-                logger.error(f"Failed to fetch data for {symbol}: {str(e)}")
-        return pd.DataFrame(data)
+                logger.error(f"Failed to fetch data for {symbol}: {e}")
+        
+        logger.debug(f"Fetched data for symbols: {list(data.keys())}")
+        
+        # data가 비어있지 않으면 pd.concat으로 Series들을 결합합니다.
+        if data:
+            combined_df = pd.concat(data, axis=1)
+            # pd.concat()의 결과가 멀티인덱스 컬럼으로 생성될 경우, 첫 번째 레벨만 사용
+            if isinstance(combined_df.columns, pd.MultiIndex):
+                combined_df.columns = combined_df.columns.get_level_values(0)
+            return combined_df
+        else:
+            return pd.DataFrame()
 
     def _calculate_returns(self, current_date: datetime) -> tuple[pd.Series, pd.Series]:
         """수익률 계산"""
@@ -56,42 +74,29 @@ class DualMomentumBacktest:
         """Buy & Hold 전략 수익률 계산 (EWY 기준)"""
         try:
             buy_and_hold_symbol = 'EWY'
-            
-            # datetime 객체를 pandas Timestamp로 변환하고 시간 정보 제거
             date = pd.Timestamp(date).normalize()
             today = pd.Timestamp.today().normalize()
-            
-            # 미래 날짜 체크
             if date > today:
                 date = self.df.index.max()
-            
-            # 해당 날짜에 데이터가 없으면 이전 유효한 날짜 찾기
             if date not in self.df.index:
                 date = self.df.index[self.df.index <= date].max()
-            
-            start_price = self.df[buy_and_hold_symbol].iloc[0]  # 항상 첫 데이터 사용
+            start_price = self.df[buy_and_hold_symbol].iloc[0]
             current_price = self.df[buy_and_hold_symbol].loc[date]
-            
             if not pd.isna(start_price) and not pd.isna(current_price):
                 return initial_capital * (current_price / start_price)
-            
             return initial_capital
-            
         except Exception as e:
-            logger.error(f"Error calculating buy and hold return for {date}: {str(e)}")
-            # 오류 발생시 가장 마지막 유효한 데이터 사용
+            logger.error(f"Error calculating buy and hold return for {date}: {e}")
             try:
                 last_valid_date = self.df.index.max()
                 return self._calculate_buy_and_hold(last_valid_date, initial_capital)
-            except:
+            except Exception:
                 return initial_capital
 
     def _process_trading_period(self, date: datetime, capital: float) -> Dict[str, Any]:
         """각 거래 기간 처리"""
         try:
             returns, monthly_returns = self._calculate_returns(date)
-            
-            # 현금 보유시 복리 계산 수정
             months_passed = ((date - self.start_date).days) / 30
             cash_capital = self.config.initial_capital * (1 + self.monthly_savings_rate) ** months_passed
             buy_and_hold_capital = self._calculate_buy_and_hold(date, self.config.initial_capital)
@@ -118,7 +123,7 @@ class DualMomentumBacktest:
                 'ewy_hold': buy_and_hold_capital
             }
         except Exception as e:
-            logger.error(f"Error processing trading period {date}: {str(e)}")
+            logger.error(f"Error processing trading period {date}: {e}")
             return None
 
     def run_backtest(self) -> Dict[str, Any]:
@@ -137,7 +142,6 @@ class DualMomentumBacktest:
                 capital = result['capital']
 
         results_df = pd.DataFrame(results)
-        
         return {
             "data": results_df.to_dict('records'),
             "summary": self._generate_summary(results_df)
@@ -157,7 +161,6 @@ class DualMomentumBacktest:
         final_capital = float(results_df['capital'].iloc[-1])
         final_cash = float(results_df['cash_hold'].iloc[-1])
         final_ewy = float(results_df['ewy_hold'].iloc[-1])
-        
         return {
             "initial_capital": self.config.initial_capital,
             "final_capital": final_capital,
@@ -172,34 +175,23 @@ def run_dual_momentum_backtest(
     savings_rate: float
 ) -> Dict[str, Any]:
     """백테스트 실행을 위한 편의 함수"""
-    backtest = DualMomentumBacktest(etf_symbols, duration, savings_rate)
+    backtest = DualMomentumBacktest(etf_symbols, duration, str(savings_rate))
     return backtest.run_backtest()
-
 
 def get_todays_dual_momentum(saved_symbol: str, etf_symbols: List[str], savings_rate: float = 3.0) -> RebalancingRecommendation:
     """
     매월 1일 리밸런싱 추천
-    
+
     Args:
         saved_symbol: 현재 보유 중인 심볼
         etf_symbols: ETF 심볼 리스트 (예: ['SPY', 'FEZ', 'EWJ'])
         savings_rate: 현금 보유시 연간 수익률 (기본값 3.0%)
-    
+
     Returns:
         RebalancingRecommendation: 리밸런싱 추천 정보를 담은 데이터 클래스
-    
-    Raises:
-        ValueError: duration이나 savings_rate가 잘못된 형식일 때
-        Exception: 기타 에러 발생시
     """
-    
     check_date = datetime.today()
-    backtest = DualMomentumBacktest(
-        etf_symbols=etf_symbols,
-        duration="1",
-        savings_rate=str(savings_rate)
-    )
-    
+    backtest = DualMomentumBacktest(etf_symbols=etf_symbols, duration="1", savings_rate=str(savings_rate))
     returns, _ = backtest._calculate_returns(check_date)
     cash_return = (float(savings_rate) / 100) * 0.5 * 100
     
@@ -211,7 +203,6 @@ def get_todays_dual_momentum(saved_symbol: str, etf_symbols: List[str], savings_
         best_return = float(returns.max())
     
     should_rebalance = saved_symbol != recommendation
-    
     return RebalancingRecommendation(
         date=check_date.strftime('%Y-%m-%d'),
         recommendation=recommendation,
@@ -222,11 +213,8 @@ def get_todays_dual_momentum(saved_symbol: str, etf_symbols: List[str], savings_
     )
 
 def save_dual_momentum(type: str):
-    #quant_data = QuantData(**api.payload)
-    #etfSymbols: ['SPY', 'FEZ', 'EWJ', 'EWY'],
     momentum = get_todays_dual_momentum('cash', ['SPY', 'FEZ', 'EWJ', 'EWY'], 3.0)
     logger.info(f'this is momentum: {asdict(momentum)}')
-
     quant_data = QuantData(
         stock=momentum.recommendation,
         quant_type=type,
@@ -235,4 +223,3 @@ def save_dual_momentum(type: str):
         initial_trend_follow=0.0,
     )
     return QuantService.register_quant_by_stock(momentum.recommendation, quant_data)
-    
