@@ -12,7 +12,7 @@ from flask_jwt_extended import get_jwt_identity
 from api import db
 from api.quant.entities import Quant
 from api.user.entities import User
-from exceptions import BadRequestException
+from exceptions import AlreadyExistsException, BadRequestException
 from util.logging_util import logger
 from util.transactional_util import transaction_scope
 
@@ -68,7 +68,7 @@ class QuantService:
         quant = Quant.query.filter_by(stock=stock, user_id=user.uuid, quant_type=quant_data.quant_type ).first()
 
         if quant is not None:
-            raise BadRequestException('이미 존재하는 퀀트입니다.', 400)
+            raise AlreadyExistsException('이미 존재하는 퀀트입니다.', 400)
 
         if user is None:
             return {"error": "User not found"}
