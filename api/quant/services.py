@@ -68,7 +68,7 @@ class QuantService:
         quant = Quant.query.filter_by(stock=stock, user_id=user.uuid, quant_type=quant_data.quant_type ).first()
 
         if quant is not None:
-            raise AlreadyExistsException('이미 존재하는 퀀트입니다.', 400)
+            raise AlreadyExistsException('이미 존재하는 퀀트입니다.', 409)
 
         if user is None:
             return {"error": "User not found"}

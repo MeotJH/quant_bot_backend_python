@@ -139,6 +139,7 @@ class DualMomentumBacktest:
             if result:
                 result['date'] = result['date'].strftime('%Y-%m-%d')
                 results.append(result)
+
                 capital = result['capital']
 
         results_df = pd.DataFrame(results)
@@ -155,18 +156,22 @@ class DualMomentumBacktest:
                 "final_capital": self.config.initial_capital,
                 "total_return": 0,
                 "cash_hold_return": 0,
-                "ewy_hold_return": 0
+                "ewy_hold_return": 0,
+                "final_best_etf" : 'EMPTY'
             }
             
         final_capital = float(results_df['capital'].iloc[-1])
         final_cash = float(results_df['cash_hold'].iloc[-1])
         final_ewy = float(results_df['ewy_hold'].iloc[-1])
+        final_best_etf = results_df['best_etf'].iloc[-1]
+
         return {
             "initial_capital": self.config.initial_capital,
             "final_capital": final_capital,
             "total_return": float((final_capital / self.config.initial_capital - 1) * 100),
             "cash_hold_return": float((final_cash / self.config.initial_capital - 1) * 100),
-            "ewy_hold_return": float((final_ewy / self.config.initial_capital - 1) * 100)
+            "ewy_hold_return": float((final_ewy / self.config.initial_capital - 1) * 100),
+            "final_best_etf" : final_best_etf
         }
 
 def run_dual_momentum_backtest(
